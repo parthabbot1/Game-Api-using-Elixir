@@ -18,7 +18,7 @@ defmodule Challenge.Supervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  @spec start_children(server :: GenServer.server(), users :: List.t()) :: :ok
+  @spec start_children(server :: GenServer.server(), users :: [String.t()]) :: :ok
   def start_children(server, users) do
     for user <- users do
       user
