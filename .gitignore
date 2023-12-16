@@ -24,3 +24,12 @@ challenge-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Ignore dialyizer files.
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
+
+
+
+
+

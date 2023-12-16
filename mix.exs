@@ -12,6 +12,10 @@ defmodule Challenge.MixProject do
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.html": :test
+      ],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/project.plt"},
+        plt_add_apps: [:mix, :ex_unit]
       ]
     ]
   end
@@ -28,7 +32,8 @@ defmodule Challenge.MixProject do
   defp deps do
     [
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~>0.14", only: :test}
+      {:excoveralls, "~>0.14", only: :test},
+      {:dialyxir, "~> 1.4.1", only: [:dev, :test], runtime: false}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
     ]

@@ -1,4 +1,4 @@
-defmodule Challenge.Supervisor do
+defmodule Challenge.UserSupervisor do
   @moduledoc """
   This supervisor is responsible to create wallet for the users.
   """
@@ -7,7 +7,7 @@ defmodule Challenge.Supervisor do
   alias Challenge.Models.Bet
   alias Challenge.Models.User
   alias Challenge.Models.Win
-  alias Challenge.Worker
+  alias Challenge.UserWorker
 
   def start_link(opts \\ []) do
     DynamicSupervisor.start_link(__MODULE__, opts)
@@ -15,25 +15,22 @@ defmodule Challenge.Supervisor do
 
   @impl true
   def init(_opts) do
-    DynamicSupervisor.init(strategy: :one_for_one)
+    DynamicSupervisor.init(strategy: :one_for_one, max_restarts: 3, max_seconds: 5)
   end
 
-  @spec start_children(server :: GenServer.server(), users :: List.t()) :: :ok
+  @spec start_children(server :: GenServer.server(), users :: [String.t()]) :: :ok
   def start_children(server, users) do
-    for user <- users do
-      user
-      |> get_child_specs(server)
-      |> start_child_process(server)
-    end
+    Enum.each(users, fn user ->
+      child_spec = {UserWorker, [User.new(%{id: user}), server]}
 
-    :ok
+      DynamicSupervisor.start_child(server, child_spec)
+    end)
   end
 
   @spec bet(server :: GenServer.server(), body :: map, registry :: atom()) :: map
   def bet(server, body, registry) do
     with %Bet{user: user} = bet <- Bet.new(body),
-         res = get_pid_from_registry("#{user}_#{inspect(server)}", registry),
-         {:ok, pid} <- get_pid_from_res(res),
+         {:ok, pid} <- check_user_exists(registry, "#{user}_#{inspect(server)}"),
          {:ok, res} <- GenServer.call(pid, {:bet, bet}) do
       res
     else
@@ -51,8 +48,7 @@ defmodule Challenge.Supervisor do
   @spec win(server :: GenServer.server(), body :: map, registry :: atom()) :: map
   def win(server, body, registry) do
     with %Win{user: user} = win <- Win.new(body),
-         res = get_pid_from_registry("#{user}_#{inspect(server)}", registry),
-         {:ok, pid} <- get_pid_from_res(res),
+         {:ok, pid} <- check_user_exists(registry, "#{user}_#{inspect(server)}"),
          {:ok, res} <- GenServer.call(pid, {:win, win}) do
       res
     else
@@ -67,15 +63,13 @@ defmodule Challenge.Supervisor do
     end
   end
 
-  defp get_child_specs(user, server), do: {Worker, [User.new(%{id: user}), server]}
+  defp check_user_exists(registry, name) do
+    case Registry.lookup(registry, name) do
+      [{pid, _}] ->
+        {:ok, pid}
 
-  defp get_pid_from_res([]), do: []
-  defp get_pid_from_res([{pid, nil}]), do: {:ok, pid}
-
-  defp get_pid_from_registry(name, registry), do: Registry.lookup(registry, name)
-
-  defp start_child_process({_, [%User{}, _server]} = child_spec, server),
-    do: DynamicSupervisor.start_child(server, child_spec)
-
-  defp start_child_process(_, _), do: :ok
+      [] ->
+        []
+    end
+  end
 end

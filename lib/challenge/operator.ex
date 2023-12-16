@@ -5,7 +5,7 @@ defmodule Challenge.Operator do
 
   @registry Challenge.Registry
 
-  alias Challenge.Supervisor
+  alias Challenge.UserSupervisor
 
   @doc """
   Start a linked and isolated supervision tree and returns the root server that
@@ -14,7 +14,7 @@ defmodule Challenge.Operator do
 
   @spec start :: GenServer.server()
   def start() do
-    {:ok, pid} = Supervisor.start_link()
+    {:ok, pid} = UserSupervisor.start_link()
     pid
   end
 
@@ -25,7 +25,7 @@ defmodule Challenge.Operator do
   """
 
   @spec create_users(server :: GenServer.server(), users :: [String.t()]) :: :ok
-  def create_users(server, users), do: Supervisor.start_children(server, users)
+  def create_users(server, users), do: UserSupervisor.start_children(server, users)
 
   @doc """
   This function places bet for a user.
@@ -33,7 +33,7 @@ defmodule Challenge.Operator do
   The result is a map with keys as atoms.
   """
   @spec bet(server :: GenServer.server(), body :: map) :: map
-  def bet(server, body), do: Supervisor.bet(server, body, @registry)
+  def bet(server, body), do: UserSupervisor.bet(server, body, @registry)
 
   @doc """
     This function processes win request made against a bet.
@@ -41,5 +41,5 @@ defmodule Challenge.Operator do
     The result is a map with keys as atoms.
   """
   @spec win(server :: GenServer.server(), body :: map) :: map
-  def win(server, body), do: Supervisor.win(server, body, @registry)
+  def win(server, body), do: UserSupervisor.win(server, body, @registry)
 end

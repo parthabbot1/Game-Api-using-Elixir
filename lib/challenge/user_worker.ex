@@ -1,4 +1,4 @@
-defmodule Challenge.Worker do
+defmodule Challenge.UserWorker do
   @moduledoc """
   This module implements wallet API methods to make wallet transactions based on the Operator Documentation.
   """

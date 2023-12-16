@@ -12,7 +12,7 @@ defmodule Challenge.Models.User do
   @type t :: %__MODULE__{
           id: String.t(),
           currency: String.t(),
-          amount: Decimal.t()
+          amount: number()
         }
 
   @spec new(%{id: String.t()}) :: Challenge.Models.User.t() | {:error, :invalid_name}

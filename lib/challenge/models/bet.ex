@@ -47,16 +47,16 @@ defmodule Challenge.Models.Bet do
           supplier_transaction_id: String.t(),
           token: String.t(),
           supplier_user: String.t(),
-          round_closed: Boolean.t(),
+          round_closed: boolean(),
           round: String.t(),
           reward_uuid: String.t(),
           request_uuid: String.t(),
-          is_free: Boolean.t(),
-          is_aggregated: Boolean.t(),
+          is_free: boolean(),
+          is_aggregated: boolean(),
           game_code: String.t(),
           currency: String.t(),
           bet: String.t(),
-          amount: Decimal.t(),
+          amount: number(),
           meta: map()
         }
 
@@ -66,16 +66,16 @@ defmodule Challenge.Models.Bet do
           supplier_transaction_id: String.t(),
           token: String.t(),
           supplier_user: String.t(),
-          round_closed: Boolean.t(),
+          round_closed: boolean(),
           round: String.t(),
           reward_uuid: String.t(),
           request_uuid: String.t(),
-          is_free: Boolean.t(),
-          is_aggregated: Boolean.t(),
+          is_free: boolean(),
+          is_aggregated: boolean(),
           game_code: String.t(),
           currency: String.t(),
           bet: String.t(),
-          amount: Decimal.t(),
+          amount: number(),
           meta: map()
         }) :: Challenge.Models.Bet.t() | {:error, atom()}
   def new(
