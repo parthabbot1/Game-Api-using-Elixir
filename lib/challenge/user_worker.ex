@@ -32,15 +32,15 @@ defmodule Challenge.UserWorker do
       {:reply, {:ok, response}, new_state}
     else
       {:error, :invalid_currency} ->
-        response = make_error_response("RS_ERROR_WRONG_CURRENCY")
+        response = make_error_response("RS_ERROR_WRONG_CURRENCY", request_uuid, state)
         {:reply, {:ok, response}, state}
 
       {:error, :insufficient_funds} ->
-        response = make_error_response("RS_ERROR_NOT_ENOUGH_MONEY")
+        response = make_error_response("RS_ERROR_NOT_ENOUGH_MONEY", request_uuid, state)
         {:reply, {:ok, response}, state}
 
       {:error, :duplicate_transaction} ->
-        response = make_error_response("RS_ERROR_DUPLICATE_TRANSACTION")
+        response = make_error_response("RS_ERROR_DUPLICATE_TRANSACTION", request_uuid, state)
         {:reply, {:ok, response}, state}
     end
   end
@@ -54,20 +54,20 @@ defmodule Challenge.UserWorker do
       {:reply, {:ok, response}, new_state}
     else
       {:error, :no_bet_exists} ->
-        response = make_error_response("RS_ERROR_TRANSACTION_DOES_NOT_EXIST")
+        response = make_error_response("RS_ERROR_TRANSACTION_DOES_NOT_EXIST", request_uuid, state)
         {:reply, {:ok, response}, state}
 
       {:error, :invalid_currency} ->
-        response = make_error_response("RS_ERROR_WRONG_CURRENCY")
+        response = make_error_response("RS_ERROR_WRONG_CURRENCY", request_uuid, state)
         {:reply, {:ok, response}, state}
 
       {:error, :duplicate_transaction} ->
-        response = make_error_response("RS_ERROR_DUPLICATE_TRANSACTION")
+        response = make_error_response("RS_ERROR_DUPLICATE_TRANSACTION", request_uuid, state)
         {:reply, {:ok, response}, state}
     end
   end
 
-  defp check_bet_amount(%Bet{amount: bet_amount}, %{user: %User{amount: amount}})
+  defp check_bet_amount(%Bet{amount: bet_amount}, %{user: %User{balance: amount}})
        when bet_amount <= amount,
        do: :ok
 
@@ -87,10 +87,20 @@ defmodule Challenge.UserWorker do
 
   defp check_currency(_, _), do: {:error, :invalid_currency}
 
-  defp make_error_response(status), do: %{status: status}
+  defp make_error_response(status, request_uuid, %{
+         user: %User{id: id, balance: amount, currency: currency}
+       }) do
+    %{
+      user: id,
+      status: status,
+      request_uuid: request_uuid,
+      currency: currency,
+      balance: amount
+    }
+  end
 
   defp make_success_response(request_uuid, status, %{
-         user: %User{id: id, amount: amount, currency: currency}
+         user: %User{id: id, balance: amount, currency: currency}
        }) do
     %{
       user: id,
@@ -103,20 +113,20 @@ defmodule Challenge.UserWorker do
 
   defp place_bet(
          %Bet{transaction_uuid: transaction_uuid, amount: bet_amount} = bet,
-         %{user: %User{amount: amount} = user, bets: bets} = state
+         %{user: %User{balance: amount} = user, bets: bets} = state
        ) do
     balance = amount - bet_amount
-    new_user = %{user | amount: balance}
+    new_user = %{user | balance: balance}
     new_bets = Map.put(bets, transaction_uuid, bet)
     {:ok, %{state | user: new_user, bets: new_bets}}
   end
 
   defp process_win(
          %Win{transaction_uuid: transaction_uuid, amount: win_amount} = win,
-         %{user: %User{amount: amount} = user, wins: wins} = state
+         %{user: %User{balance: amount} = user, wins: wins} = state
        ) do
     balance = amount + win_amount
-    new_user = %{user | amount: balance}
+    new_user = %{user | balance: balance}
     new_wins = Map.put(wins, transaction_uuid, win)
     {:ok, %{state | user: new_user, wins: new_wins}}
   end
