@@ -132,7 +132,9 @@ defmodule ChallengeTest do
       assert %{status: "RS_ERROR_UNKNOWN"} = Challenge.bet(spid, bet)
     end
 
-    test "does not places bet if transaction uuid is duplicate", %{supervisor_pid: spid} do
+    test "idempotency - does not places bet if transaction uuid is duplicate", %{
+      supervisor_pid: spid
+    } do
       user = "parth1"
       assert :ok = Challenge.create_users(spid, [user])
       [{pid, nil}] = Registry.lookup(@registry, get_user(spid, user))
@@ -149,7 +151,11 @@ defmodule ChallengeTest do
              } = Challenge.bet(spid, bet)
 
       assert %{
-               status: "RS_ERROR_DUPLICATE_TRANSACTION"
+               user: ^user,
+               status: "RS_OK",
+               request_uuid: _,
+               currency: "USD",
+               balance: 97_000
              } = Challenge.bet(spid, bet)
     end
 
@@ -352,9 +358,13 @@ defmodule ChallengeTest do
                balance: 100_500
              } = Challenge.win(spid, win)
 
-      assert %{
-               status: "RS_ERROR_DUPLICATE_TRANSACTION"
-             } = Challenge.win(spid, win)
+      assert assert %{
+                      user: ^user,
+                      status: "RS_OK",
+                      request_uuid: ^request_uuid,
+                      currency: "USD",
+                      balance: 100_500
+                    } = Challenge.win(spid, win)
     end
 
     test "returns error if reference_transaction_uuid is invalid.", %{supervisor_pid: spid} do

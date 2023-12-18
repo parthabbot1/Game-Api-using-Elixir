@@ -11,6 +11,7 @@ defmodule Challenge.UserWorker do
   alias Challenge.Models.Bet
   alias Challenge.Models.User
   alias Challenge.Models.Win
+  alias Challenge.UserAgent
 
   def start_link([%User{id: id}, server] = opts) do
     registry_name = "#{id}_#{inspect(server)}"
@@ -29,6 +30,7 @@ defmodule Challenge.UserWorker do
          :ok <- check_currency(bet.currency, state),
          {:ok, new_state} <- place_bet(bet, state) do
       response = make_success_response(request_uuid, "RS_OK", new_state)
+      UserAgent.put_transaction(:agent, bet.transaction_uuid, response)
       {:reply, {:ok, response}, new_state}
     else
       {:error, :invalid_currency} ->
@@ -42,6 +44,10 @@ defmodule Challenge.UserWorker do
       {:error, :duplicate_transaction} ->
         response = make_error_response("RS_ERROR_DUPLICATE_TRANSACTION", request_uuid, state)
         {:reply, {:ok, response}, state}
+
+      {:error, :idempotency_case} ->
+        response = UserAgent.get_transaction(:agent, bet.transaction_uuid)
+        {:reply, {:ok, response}, state}
     end
   end
 
@@ -51,6 +57,7 @@ defmodule Challenge.UserWorker do
          :ok <- check_currency(win.currency, state),
          {:ok, new_state} <- process_win(win, state) do
       response = make_success_response(request_uuid, "RS_OK", new_state)
+      UserAgent.put_transaction(:agent, win.transaction_uuid, response)
       {:reply, {:ok, response}, new_state}
     else
       {:error, :no_bet_exists} ->
@@ -63,6 +70,10 @@ defmodule Challenge.UserWorker do
 
       {:error, :duplicate_transaction} ->
         response = make_error_response("RS_ERROR_DUPLICATE_TRANSACTION", request_uuid, state)
+        {:reply, {:ok, response}, state}
+
+      {:error, :idempotency_case} ->
+        response = UserAgent.get_transaction(:agent, win.transaction_uuid)
         {:reply, {:ok, response}, state}
     end
   end
@@ -132,10 +143,16 @@ defmodule Challenge.UserWorker do
   end
 
   defp transaction_exists(transaction_uuid, transactions) do
-    if transactions[transaction_uuid] == nil do
-      nil
-    else
-      {:error, :duplicate_transaction}
+    cond do
+      transactions[transaction_uuid] == nil ->
+        nil
+
+      UserAgent.get_transaction(:agent, transaction_uuid).user ===
+          transactions[transaction_uuid].user ->
+        {:error, :idempotency_case}
+
+      true ->
+        {:error, :duplicate_transaction}
     end
   end
 
