@@ -30,7 +30,7 @@ defmodule Challenge.UserWorker do
          :ok <- check_currency(bet.currency, state),
          {:ok, new_state} <- place_bet(bet, state) do
       response = make_success_response(request_uuid, "RS_OK", new_state)
-      UserAgent.put_transaction(:agent, bet.transaction_uuid, response)
+      UserAgent.put_transaction(bet.transaction_uuid, response)
       {:reply, {:ok, response}, new_state}
     else
       {:error, :invalid_currency} ->
@@ -46,7 +46,7 @@ defmodule Challenge.UserWorker do
         {:reply, {:ok, response}, state}
 
       {:error, :idempotency_case} ->
-        response = UserAgent.get_transaction(:agent, bet.transaction_uuid)
+        response = UserAgent.get_transaction(bet.transaction_uuid)
         {:reply, {:ok, response}, state}
     end
   end
@@ -57,7 +57,7 @@ defmodule Challenge.UserWorker do
          :ok <- check_currency(win.currency, state),
          {:ok, new_state} <- process_win(win, state) do
       response = make_success_response(request_uuid, "RS_OK", new_state)
-      UserAgent.put_transaction(:agent, win.transaction_uuid, response)
+      UserAgent.put_transaction(win.transaction_uuid, response)
       {:reply, {:ok, response}, new_state}
     else
       {:error, :no_bet_exists} ->
@@ -73,7 +73,7 @@ defmodule Challenge.UserWorker do
         {:reply, {:ok, response}, state}
 
       {:error, :idempotency_case} ->
-        response = UserAgent.get_transaction(:agent, win.transaction_uuid)
+        response = UserAgent.get_transaction(win.transaction_uuid)
         {:reply, {:ok, response}, state}
     end
   end
@@ -147,7 +147,7 @@ defmodule Challenge.UserWorker do
       transactions[transaction_uuid] == nil ->
         nil
 
-      UserAgent.get_transaction(:agent, transaction_uuid).user ===
+      UserAgent.get_transaction(transaction_uuid).user ===
           transactions[transaction_uuid].user ->
         {:error, :idempotency_case}
 

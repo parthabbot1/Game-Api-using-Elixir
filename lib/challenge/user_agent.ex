@@ -6,16 +6,14 @@ defmodule Challenge.UserAgent do
   """
 
   def start_link(_opts) do
-    Agent.start_link(fn -> %{} end, name: :agent)
+    Agent.start_link(fn -> %{} end, name: :idempotent)
   end
 
-  def get_transaction(:agent, transaction_uuid) do
-    Agent.get(:agent, &Map.get(&1, transaction_uuid))
+  def get_transaction(transaction_uuid) do
+    Agent.get(:idempotent, &Map.get(&1, transaction_uuid))
   end
 
-  @spec put_transaction(atom() | pid() | {atom(), any()} | {:via, atom(), any()}, any(), any()) ::
-          :ok
-  def put_transaction(:agent, key, body) do
-    Agent.update(:agent, &Map.put(&1, key, body))
+  def put_transaction(transaction_uuid, body) do
+    Agent.update(:idempotent, &Map.put(&1, transaction_uuid, body))
   end
 end
