@@ -142,7 +142,7 @@ defmodule Challenge.UserWorker do
     {:ok, %{state | user: new_user, wins: new_wins}}
   end
 
-  # Please note we are checkhing the idempotency at user level as well keeping
+  # Please note we are checking the idempotency at user level as well keeping
   #  the scalability of app in mind. in the current scenario it is not required
   # but in future it may be required
 
