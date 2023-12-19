@@ -4,10 +4,8 @@ defmodule Challenge.UserSupervisor do
   """
   use DynamicSupervisor
 
-  alias Challenge.Models.Bet
-  alias Challenge.Models.User
-  alias Challenge.Models.Win
-  alias Challenge.UserWorker
+  alias Challenge.Models.{Bet, User, Win}
+  alias Challenge.{UserAgent, UserWorker}
 
   def start_link(opts \\ []) do
     DynamicSupervisor.start_link(__MODULE__, opts)
@@ -31,14 +29,21 @@ defmodule Challenge.UserSupervisor do
   def bet(server, body, registry) do
     with %Bet{user: user} = bet <- Bet.new(body),
          {:ok, pid} <- check_user_exists(registry, "#{user}_#{inspect(server)}"),
+         {:ok, nil} <- transaction_exists(bet),
          {:ok, res} <- GenServer.call(pid, {:bet, bet}) do
       res
     else
+      {:ok, response} ->
+        response
+
       {:error, :invalid_bet} ->
         %{status: "RS_ERROR_WRONG_SYNTAX"}
 
       {:error, :wrong_type} ->
         %{status: "RS_ERROR_WRONG_TYPES"}
+
+      {:error, :duplicate_transaction} ->
+        {:error, "RS_ERROR_DUPLICATE_TRANSACTION"}
 
       _ ->
         %{status: "RS_ERROR_UNKNOWN"}
@@ -49,14 +54,21 @@ defmodule Challenge.UserSupervisor do
   def win(server, body, registry) do
     with %Win{user: user} = win <- Win.new(body),
          {:ok, pid} <- check_user_exists(registry, "#{user}_#{inspect(server)}"),
+         {:ok, nil} <- transaction_exists(win),
          {:ok, res} <- GenServer.call(pid, {:win, win}) do
       res
     else
+      {:ok, response} ->
+        response
+
       {:error, :invalid_win} ->
         %{status: "RS_ERROR_WRONG_SYNTAX"}
 
       {:error, :wrong_type} ->
         %{status: "RS_ERROR_WRONG_TYPES"}
+
+      {:error, :duplicate_transaction} ->
+        {:error, "RS_ERROR_DUPLICATE_TRANSACTION"}
 
       _ ->
         %{status: "RS_ERROR_UNKNOWN"}
@@ -70,6 +82,23 @@ defmodule Challenge.UserSupervisor do
 
       [] ->
         []
+    end
+  end
+
+  defp transaction_exists(%{
+         transaction_uuid: transaction_uuid,
+         user: user,
+         request_uuid: request_uuid
+       }) do
+    case UserAgent.get_transaction(transaction_uuid) do
+      nil ->
+        {:ok, nil}
+
+      %{user: ^user, request_uuid: ^request_uuid} = response ->
+        {:ok, response}
+
+      _ ->
+        {:error, :duplicate_transaction}
     end
   end
 end
