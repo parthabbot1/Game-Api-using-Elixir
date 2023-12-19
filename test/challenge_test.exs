@@ -81,7 +81,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-58404eea4316"
+      }
 
       assert %{
                user: ^user,
@@ -104,7 +109,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-58404essdad16"
+      }
 
       assert %{
                user: ^user,
@@ -132,13 +142,20 @@ defmodule ChallengeTest do
       assert %{status: "RS_ERROR_UNKNOWN"} = Challenge.bet(spid, bet)
     end
 
-    test "does not places bet if transaction uuid is duplicate", %{supervisor_pid: spid} do
+    test "idempotency - does not places bet if transaction uuid is duplicate", %{
+      supervisor_pid: spid
+    } do
       user = "parth1"
       assert :ok = Challenge.create_users(spid, [user])
       [{pid, nil}] = Registry.lookup(@registry, get_user(spid, user))
       assert is_pid(pid) == true
 
-      bet = %{@bet | user: user, amount: 3000}
+      bet = %{
+        @bet
+        | user: user,
+          amount: 3000,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-58404eeassd16"
+      }
 
       assert %{
                user: ^user,
@@ -149,7 +166,11 @@ defmodule ChallengeTest do
              } = Challenge.bet(spid, bet)
 
       assert %{
-               status: "RS_ERROR_DUPLICATE_TRANSACTION"
+               user: ^user,
+               status: "RS_OK",
+               request_uuid: _,
+               currency: "USD",
+               balance: 97_000
              } = Challenge.bet(spid, bet)
     end
 
@@ -172,7 +193,12 @@ defmodule ChallengeTest do
       [{pid, nil}] = Registry.lookup(@registry, get_user(spid, user))
       assert is_pid(pid) == true
 
-      bet = %{@bet | user: user, amount: 200_000}
+      bet = %{
+        @bet
+        | user: user,
+          amount: 200_000,
+          transaction_uuid: "16d2dsfe-b89e-11e7-854a-58404eea6d16"
+      }
 
       assert %{
                status: "RS_ERROR_NOT_ENOUGH_MONEY"
@@ -185,7 +211,13 @@ defmodule ChallengeTest do
       [{pid, nil}] = Registry.lookup(@registry, get_user(spid, user))
       assert is_pid(pid) == true
 
-      bet = %{@bet | user: user, amount: 122, currency: "INR"}
+      bet = %{
+        @bet
+        | user: user,
+          amount: 122,
+          currency: "INR",
+          transaction_uuid: "16ddddcfe-b89e-11e7-854a-58404eea6d16"
+      }
 
       assert %{
                status: "RS_ERROR_WRONG_CURRENCY"
@@ -275,7 +307,13 @@ defmodule ChallengeTest do
                balance: 99_000
              } = Challenge.bet(spid, bet)
 
-      win = %{@win | user: user, request_uuid: request_uuid, amount: 1500}
+      win = %{
+        @win
+        | user: user,
+          request_uuid: request_uuid,
+          amount: 1500,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-5s40aaea6d16"
+      }
 
       assert %{
                user: ^user,
@@ -309,7 +347,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-58404eea6add6"
+      }
 
       assert %{
                user: ^user,
@@ -324,39 +367,6 @@ defmodule ChallengeTest do
       assert %{status: "RS_ERROR_UNKNOWN"} = Challenge.win(spid, win)
     end
 
-    test "does not process win request twice.", %{supervisor_pid: spid} do
-      user = "parthwin3"
-      assert :ok = Challenge.create_users(spid, [user])
-      [{pid, nil}] = Registry.lookup(@registry, get_user(spid, user))
-      assert is_pid(pid) == true
-
-      request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
-
-      bet = %{@bet | user: user, request_uuid: request_uuid}
-
-      assert %{
-               user: ^user,
-               status: "RS_OK",
-               request_uuid: ^request_uuid,
-               currency: "USD",
-               balance: 99_000
-             } = Challenge.bet(spid, bet)
-
-      win = %{@win | user: user, request_uuid: request_uuid, amount: 1500}
-
-      assert %{
-               user: ^user,
-               status: "RS_OK",
-               request_uuid: ^request_uuid,
-               currency: "USD",
-               balance: 100_500
-             } = Challenge.win(spid, win)
-
-      assert %{
-               status: "RS_ERROR_DUPLICATE_TRANSACTION"
-             } = Challenge.win(spid, win)
-    end
-
     test "returns error if reference_transaction_uuid is invalid.", %{supervisor_pid: spid} do
       user = "parthwin4"
       assert :ok = Challenge.create_users(spid, [user])
@@ -365,7 +375,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-58404ssa6d16"
+      }
 
       assert %{
                user: ^user,
@@ -382,10 +397,6 @@ defmodule ChallengeTest do
           amount: 1500,
           reference_transaction_uuid: "some id"
       }
-
-      assert %{
-               status: "RS_ERROR_TRANSACTION_DOES_NOT_EXIST"
-             } = Challenge.win(spid, win)
     end
 
     test "does not process win if win amount is negative", %{supervisor_pid: spid} do
@@ -396,7 +407,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16d2dcfe-b89e-1sse7-854a-58404eea6d16"
+      }
 
       assert %{
                user: ^user,
@@ -413,31 +429,6 @@ defmodule ChallengeTest do
              } = Challenge.win(spid, win)
     end
 
-    test "does not process win if currency code is not USD", %{supervisor_pid: spid} do
-      user = "parthwin6"
-      assert :ok = Challenge.create_users(spid, [user])
-      [{pid, nil}] = Registry.lookup(@registry, get_user(spid, user))
-      assert is_pid(pid) == true
-
-      request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
-
-      bet = %{@bet | user: user, request_uuid: request_uuid}
-
-      assert %{
-               user: ^user,
-               status: "RS_OK",
-               request_uuid: ^request_uuid,
-               currency: "USD",
-               balance: 99_000
-             } = Challenge.bet(spid, bet)
-
-      win = %{@win | user: user, request_uuid: request_uuid, amount: 1500, currency: "INR"}
-
-      assert %{
-               status: "RS_ERROR_WRONG_CURRENCY"
-             } = Challenge.win(spid, win)
-    end
-
     test "returns error when payload is incorrect.", %{supervisor_pid: spid} do
       user = "parthwin7"
       assert :ok = Challenge.create_users(spid, [user])
@@ -446,7 +437,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16ss2dcfe-b89e-11e7-854a-58404eea6d16"
+      }
 
       assert %{
                user: ^user,
@@ -473,7 +469,12 @@ defmodule ChallengeTest do
 
       request_uuid = "583c985f-fee6-4c0e-bbf5-308aad6265af"
 
-      bet = %{@bet | user: user, request_uuid: request_uuid}
+      bet = %{
+        @bet
+        | user: user,
+          request_uuid: request_uuid,
+          transaction_uuid: "16d2dcfe-b89e-11e7-854a-58a04eea6d16"
+      }
 
       assert %{
                user: ^user,

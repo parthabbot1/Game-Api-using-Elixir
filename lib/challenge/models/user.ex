@@ -7,12 +7,12 @@ defmodule Challenge.Models.User do
     :id
   ]
 
-  defstruct id: nil, currency: "USD", amount: 100_000
+  defstruct id: nil, currency: "USD", balance: 100_000
 
   @type t :: %__MODULE__{
           id: String.t(),
           currency: String.t(),
-          amount: number()
+          balance: number()
         }
 
   @spec new(%{id: String.t()}) :: Challenge.Models.User.t() | {:error, :invalid_name}
